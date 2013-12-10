@@ -1,4 +1,4 @@
-from bottle import route, run, template, request
+from bottle import route, run, template, request, abort
 
 nodes={
     "Monica": {
@@ -18,6 +18,10 @@ relations = {
     }
 }
 
+@route("/invalidrequest")
+def invalidrequest():
+    abort(400, "Argumentos no validos")
+
 @route('/index')
 def index():
     return "<h1>Base de datos  minigrafos</h1>"
@@ -35,8 +39,9 @@ def searchNodes(usuario):
         nombre=usuario, 
         edad=nodes[usuario]["edad"],
         estudio=nodes[usuario]["Estudios"])
-    else:
-        return "<h1>No existe usuario"
+
+    abort(404, "Nodo inexistente")
+
     
 
 @route("/searchrel/<relation>")
@@ -56,13 +61,24 @@ def searchRelation(relation):
                            estudio=nodes[node]["Estudios"])
         return result
 
-    return "<h1>No existe</h1>"
+    abort(404, "Relacion inexistente")
  
-@route('/test/')
+@route('/test')
 def test():
-    a = int(request.GET.get("a"))
-    b = float(request.GET.get("b"))
-    c = request.GET.get("c").upper()
-    return dict(a=a,b=b,c=c)
+    """
+    Ejemplo de uso
+        /test?nombre=casimiro&edad=35&sexo=Masculino
+
+    Si no se pasan parametros se lanzara un codigo de error 400
+
+    """
+    if request.query:
+        attributes = "<ul>"
+        for key,value in request.query.items():
+            attributes += template("<li>{{key}} : {{value}}</li>", key=key, value=value)
+        attributes += "</ul>"
+        return attributes
+
+    abort(400, "Argumentos no validos")
 
 run(host="localhost", port=8080, reloader=True)
