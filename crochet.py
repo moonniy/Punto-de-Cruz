@@ -110,7 +110,7 @@ class Crochet:
                     if len(Results) == limit:
                         return Results
         
-                
+        return Results
 
     def getRelation(self, relation):
         if self.existRelation(relation):

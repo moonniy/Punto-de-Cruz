@@ -35,20 +35,27 @@ def invalidrequest():
 def index():
     return "<h1>Base de datos  minigrafos</h1>"
 
-@route("/searchnode/<usuario>")
+@route("/searchnode")
 def searchNodes(usuario):
-    if usuario in nodes.keys():
-        return template("""
-        <h1>{{nombre}}</h1>
-        <ul>
-            <li>Edad: {{edad}}</li>
-            <li>Estudios {{estudio}}</li>
-        </ul>
-        """, 
-        nombre=usuario, 
-        edad=nodes[usuario]["edad"],
-        estudio=nodes[usuario]["Estudios"])
+    if request.query:
+        query = {}
+        for key, value in request.query.items():
+            if KEY.search(key) and VALUE.search(value):
+                query[key] = value
 
+        bindList = ""
+        nodes = db.getNode(query)
+        if nodes != []:
+            for tmpNode in nodes:
+                bindList += "<ul>"
+                for clave, valor in tmpNode.items():
+                    bindList += template("<li>{{clave}}: {{valor}}</li>",
+                                         clave=clave, 
+                                         valor=valor)
+                bindList += "</ul>"
+
+            return bindList
+                
     abort(404, "Nodo inexistente")
 
     
