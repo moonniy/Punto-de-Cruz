@@ -4,8 +4,8 @@ from bottle import route, run, template, request, abort
 from crochet import Crochet
 import re
 
-KEY = re.compile("^[a-zA-z1-9-_]+$")
-VALUE = re.compile("^[\w\d\s]*$")
+KEY = re.compile("^[a-zA-z1-9\-_]+$")
+VALUE = re.compile("^[\-_\w\d\s]*$")
 
 nodes={
     "Monica": {
@@ -55,19 +55,24 @@ def searchNodes(usuario):
 
 @route("/searchrel/<relation>")
 def searchRelation(relation):
-    result = "<h1>Relacion %s </h1>" % relation
-    if relation in relations.keys():
-        for node in relations[relation]["Nodos"]:
+    rel = db.getRelation(relation)
+    if rel != {}:
+        result = "<h1>Relacion %s </h1>" % relation
+        for node in rel["relations"]:
             result += template("""
-        <h2>{{nombre}}</h2>
         <ul>
-            <li>Edad: {{edad}}</li>
-            <li>Estudios {{estudio}}</li>
+            <li>From: {{fromNode}}</li>
+            <li>to: {{toNode}}</li>
+            <li>direction: {{direction}}
+            <li>Properties: {{properties}}
         </ul>
         """, 
-        nombre=node, 
-                           edad=nodes[node]["edad"],
-                           estudio=nodes[node]["Estudios"])
+            fromNode=node["from"],
+            toNode=node["to"],
+            direction=node["direction"],
+            properties=node["properties"]
+            )
+
         return result
 
     abort(404, "Relacion inexistente")
@@ -85,22 +90,22 @@ def writeRelation():
 
         for key, value in request.query.items():
             if KEY.search(key) and VALUE.search(value):
-                abort = False
+                needabort = False
                 if key == "from":
                     fromNode = value
                 elif key == "to":
                     toNode = value
-                if key == "name":
+                elif key == "name":
                     relation = value
-                if key == "direction" and value in ("unidirectional", "bidirectional"):
+                elif key == "direction" and value in ("unidirectional", "bidirectional"):
                     direction=value
                 else:
                     data[key] = value
             else:
-                abort = True
+                needabort = True
                 break
 
-        if not abort:
+        if not needabort:
             result, sync = db.writeRelation(relation=relation,
                                             fromNode=fromNode,
                                             toNode=toNode,
@@ -126,17 +131,17 @@ def writeNode():
     if request.query:
         data = {}
 
-        abort = False
+        needabort = False
 
         for key, value in request.query.items():
             if KEY.search(key) and VALUE.search(value):
                 data[key] = value
             else:
-                abort=True
+                needabort=True
                 break
 
 
-        if not abort:
+        if not needabort:
             id, sync = db.writeNode(data)
             return '<h1>insercion con id. %s satisfactoria </h1>' % id["_id"]
 
