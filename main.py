@@ -1,4 +1,11 @@
+#!../bin/python
+
 from bottle import route, run, template, request, abort
+from crochet import Crochet
+import re
+
+KEY = re.compile("^[a-zA-z1-9-_]+$")
+VALUE = re.compile("^[\w\d\s]*$")
 
 nodes={
     "Monica": {
@@ -17,6 +24,8 @@ relations = {
         #"atributes": {}
     }
 }
+
+db = Crochet()
 
 @route("/invalidrequest")
 def invalidrequest():
@@ -63,8 +72,50 @@ def searchRelation(relation):
 
     abort(404, "Relacion inexistente")
  
-@route('/test')
-def test():
+
+@route('/writeRelation')
+def writeRelation():
+    if request.query:
+        data = {}
+        fromNode = None
+        toNode = None
+        relation = "None"
+        direction = None
+        
+
+        for key, value in request.query.items():
+            if KEY.search(key) and VALUE.search(value):
+                abort = False
+                if key == "from":
+                    fromNode = value
+                elif key == "to":
+                    toNode = value
+                if key == "name":
+                    relation = value
+                if key == "direction" and value in ("unidirectional", "bidirectional"):
+                    direction=value
+                else:
+                    data[key] = value
+            else:
+                abort = True
+                break
+
+        if not abort:
+            result, sync = db.writeRelation(relation=relation,
+                                            fromNode=fromNode,
+                                            toNode=toNode,
+                                            properties=data,
+                                            direction=direction)
+
+            return "<h1>la relacion %s se ha creado correctamente<h1>" % result
+
+        abort(400, "Argumentos no validos")
+                             
+
+        
+
+@route('/writeNode')
+def writeNode():
     """
     Ejemplo de uso
         /test?nombre=casimiro&edad=35&sexo=Masculino
@@ -73,11 +124,21 @@ def test():
 
     """
     if request.query:
-        attributes = "<ul>"
-        for key,value in request.query.items():
-            attributes += template("<li>{{key}} : {{value}}</li>", key=key, value=value)
-        attributes += "</ul>"
-        return attributes
+        data = {}
+
+        abort = False
+
+        for key, value in request.query.items():
+            if KEY.search(key) and VALUE.search(value):
+                data[key] = value
+            else:
+                abort=True
+                break
+
+
+        if not abort:
+            id, sync = db.writeNode(data)
+            return '<h1>insercion con id. %s satisfactoria </h1>' % id["_id"]
 
     abort(400, "Argumentos no validos")
 
