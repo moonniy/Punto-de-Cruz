@@ -33,10 +33,10 @@ def invalidrequest():
 
 @route('/index')
 def index():
-    return "<h1>Base de datos  minigrafos</h1>"
+    return {"Base de datos":"minigrafos"}
 
 @route("/searchnode")
-def searchNodes(usuario):
+def searchNodes():
     if request.query:
         query = {}
         for key, value in request.query.items():
@@ -54,7 +54,7 @@ def searchNodes(usuario):
                                          valor=valor)
                 bindList += "</ul>"
 
-            return bindList
+            return {"nodes": nodes}
                 
     abort(404, "Nodo inexistente")
 
@@ -80,7 +80,7 @@ def searchRelation(relation):
             properties=node["properties"]
             )
 
-        return result
+        return rel
 
     abort(404, "Relacion inexistente")
  
@@ -147,7 +147,7 @@ def writeNode():
                 needabort=True
                 break
 
-
+                
         if not needabort:
             id, sync = db.writeNode(data)
             return '<h1>insercion con id. %s satisfactoria </h1>' % id["_id"]
